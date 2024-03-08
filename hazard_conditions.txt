@@ -1,0 +1,3 @@
+hazard points for cvs:
+0 - 100 points
+based on speed, distance, diameter, potential hazard warning
