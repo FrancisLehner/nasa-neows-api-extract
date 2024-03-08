@@ -8,50 +8,43 @@ from dotenv import load_dotenv
 load_dotenv()
 API_KEY = os.getenv('API_KEY')
 
-os.chdir('C:/Users/Editor PC 2/Desktop/francis/Python/API_Practice/NASA_NEWOS')
 
-def Asteroidneows():
-    def fetch_neows_data(start_date, end_date, api_key):
-        base_url = f'https://api.nasa.gov/neo/rest/v1/feed?start_date={start_date}&end_date={end_date}&api_key={api_key}'
-        response = requests.get(base_url)
-        return response.json()
+def fetch_neows_data(start_date, end_date, api_key):
+    base_url = f'https://api.nasa.gov/neo/rest/v1/feed?start_date={start_date}&end_date={end_date}&api_key={api_key}'
+    response = requests.get(base_url)
+    return response.json()
+
+def neows_to_csv(neows_data, csv_filename):
     
-    def neows_to_csv(neows_data, csv_filename):
-        
-        neo_data = neows_data['near_earth_objects']
+    neo_data = neows_data['near_earth_objects']
+    with open(csv_filename, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['Date', 'Name', 'Reference ID', 'Absolute Magnitude', 'Close Approach Date', 'Relative Velocity (km/s)',  'Relative Velocity (km/h)', 'Estimated Diameter Min (km)', 'Estimated Diameter Max (km)', 'Miss Distance (km)', 'Orbitiing Body', 'Potentially Hazardous'])
+        # 'absolute_magnitude_h': 24.74, 'estimated_diameter': {'kilometers': {'estimated_diameter_min': 0.0299609084, 'estimated_diameter_max': 0.0669946278}
+        # 'close_approach_data': [{'close_approach_date': '2021-01-01', 'close_approach_date_full': '2021-Jan-01 11:00', 'epoch_date_close_approach': 1609498800000, 'relative_velocity': {'kilometers_per_second': '11.3411969891', 'kilometers_per_hour': '40828.309160747', 'miles_per_hour': '25369.1235449097'}, 'miss_distance': {'astronomical': '0.0802024851', 'lunar': '31.1987667039', 'kilometers': '11998120.939666737', 'miles': '7455286.6456734906'}, 'orbiting_body': 'Earth'}]
+        for date, neos_list in neo_data.items():
+            for neo in neos_list:
+                name = neo['name']
+                reference_id = neo['neo_reference_id']
+                abs_magnitude = neo['absolute_magnitude_h']
+                close_approach_data = neo['close_approach_data'][0]
+                close_approach_date = close_approach_data['close_approach_date']
+                relative_velocity_s = close_approach_data['relative_velocity']['kilometers_per_second']
+                relative_velocity_h = close_approach_data['relative_velocity']['kilometers_per_hour']
+                est_diameter_min = neo['estimated_diameter']['kilometers']['estimated_diameter_min']
+                est_diameter_max = neo['estimated_diameter']['kilometers']['estimated_diameter_max']
+                miss_distance = close_approach_data['miss_distance']
+                orbiting_body = close_approach_data['orbiting_body']
+                potential_hazard = neo['is_potentially_hazardous_asteroid']
+                writer.writerow([date, name, reference_id, abs_magnitude, close_approach_date, relative_velocity_s, relative_velocity_h, est_diameter_min, est_diameter_max, miss_distance, orbiting_body, potential_hazard])
 
-        with open(csv_filename, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
+start_date = input('Start Date:')
+end_date = input('End Date: ')
+api_key = API_KEY
+csv_filename = f"new_data_{start_date}_{end_date}"
+neows_data = fetch_neows_data(start_date, end_date, api_key)
 
-            writer.writerow(['Date', 'Name', 'Reference ID', 'Absolute Magnitude', 'Close Approach Date', 'Relative Velocity (km/s)',  'Relative Velocity (km/h)', 'Estimated Diameter Min (km)', 'Estimated Diameter Max (km)', 'Miss Distance (km)', 'Orbitiing Body', 'Potentially Hazardous'])
-            # 'absolute_magnitude_h': 24.74, 'estimated_diameter': {'kilometers': {'estimated_diameter_min': 0.0299609084, 'estimated_diameter_max': 0.0669946278}
-            # 'close_approach_data': [{'close_approach_date': '2021-01-01', 'close_approach_date_full': '2021-Jan-01 11:00', 'epoch_date_close_approach': 1609498800000, 'relative_velocity': {'kilometers_per_second': '11.3411969891', 'kilometers_per_hour': '40828.309160747', 'miles_per_hour': '25369.1235449097'}, 'miss_distance': {'astronomical': '0.0802024851', 'lunar': '31.1987667039', 'kilometers': '11998120.939666737', 'miles': '7455286.6456734906'}, 'orbiting_body': 'Earth'}]
-
-            for date, neos_list in neo_data.items():
-                for neo in neos_list:
-                    name = neo['name']
-                    reference_id = neo['neo_reference_id']
-                    abs_magnitude = neo['absolute_magnitude_h']
-                    close_approach_data = neo['close_approach_data'][0]
-                    close_approach_date = close_approach_data['close_approach_date']
-                    relative_velocity_s = close_approach_data['relative_velocity']['kilometers_per_second']
-                    relative_velocity_h = close_approach_data['relative_velocity']['kilometers_per_hour']
-                    est_diameter_min = neo['estimated_diameter']['kilometers']['estimated_diameter_min']
-                    est_diameter_max = neo['estimated_diameter']['kilometers']['estimated_diameter_max']
-                    miss_distance = close_approach_data['miss_distance']
-                    orbiting_body = close_approach_data['orbiting_body']
-                    potential_hazard = neo['is_potentially_hazardous_asteroid']
-
-                    writer.writerow([date, name, reference_id, abs_magnitude, close_approach_date, relative_velocity_s, relative_velocity_h, est_diameter_min, est_diameter_max, miss_distance, orbiting_body, potential_hazard])
-    
-    start_date = input('Start Date:')
-    end_date = input('End Date: ')
-    api_key = API_KEY
-    csv_filename = f"new_data_{start_date}_{end_date}"
-
-    neows_data = fetch_neows_data(start_date, end_date, api_key)
-    
-    neows_to_csv(neows_data, csv_filename)
+neows_to_csv(neows_data, csv_filename)
 
 df_name = 'neows_2024-02-14_2024-02-20.csv'
 df = pd.read_csv(df_name)
@@ -92,11 +85,6 @@ def TakeConditions():
     new_hazard.to_csv('hazard.csv', index=False)
     new_abs_mag.to_csv("absolute_magnitude.csv", index=False)
 
-    print(new_distance.head())
-    print(new_velocity.head())
-    print(new_diameter.head())
-    print(new_hazard.head())
-    print(new_abs_mag.head())
 
 def calculate_danger_score(asteroid):
     points = 0
@@ -133,7 +121,6 @@ def calculate_danger_score(asteroid):
         points += 25
     return(points)
 
-
 modified_df = df
 modified_df['Hazard Points'] = df.apply(calculate_danger_score, axis=1)
 modified_df.to_csv(f'modified_{df_name}')
@@ -149,7 +136,7 @@ def plot_point_to_parameter(column_name, start_date, end_date):
     plt.ylabel('Hazard Points')
     plt.xlabel(column_name)
     plt.show()
-plot_point_to_parameter('Relative Velocity (km/h)', '2024-02-14', '2024-02-20')
+
 
     
 
